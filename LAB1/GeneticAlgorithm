@@ -1,0 +1,72 @@
+import random
+import math
+
+# GA parameters
+population_size = 20
+num_generations = 50
+chromosome_length = 16
+mutation_rate = 0.01
+
+def fitness_function(x):
+    return x * math.sin(10 * math.pi * x) + 1.0
+
+def random_solution():
+    return ''.join(random.choice('01') for _ in range(chromosome_length))
+
+def decode(chromosome):
+    integer_value = int(chromosome, 2)
+    max_integer = 2 ** chromosome_length - 1
+    return integer_value / max_integer
+
+def select_parents(population, fitnesses):
+    pop_with_fit = list(zip(population, fitnesses))
+    sorted_by_fit = sorted(pop_with_fit, key=lambda x: x[1], reverse=True)
+    parents = [chrom for chrom, fit in sorted_by_fit[:population_size // 2]]
+    return parents
+
+def crossover(parent1, parent2):
+    point = random.randint(1, chromosome_length - 1)
+    child1 = parent1[:point] + parent2[point:]
+    child2 = parent2[:point] + parent1[point:]
+    return child1, child2
+
+def mutate(chromosome):
+    chromosome_list = list(chromosome)
+    for i in range(chromosome_length):
+        if random.random() < mutation_rate:
+            chromosome_list[i] = '0' if chromosome_list[i] == '1' else '1'
+    return ''.join(chromosome_list)
+
+def genetic_algorithm():
+    population = [random_solution() for _ in range(population_size)]
+    best_chrom = None
+    best_fitness = float('-inf')
+
+    for g in range(num_generations):
+        fitnesses = [fitness_function(decode(chrom)) for chrom in population]
+        
+        # Track best
+        for chrom, fit in zip(population, fitnesses):
+            if fit > best_fitness:
+                best_fitness = fit
+                best_chrom = chrom
+        
+        parents = select_parents(population, fitnesses)
+        children = []
+
+        while len(children) < population_size:
+            parent1 = random.choice(parents)
+            parent2 = random.choice(parents)
+            child1, child2 = crossover(parent1, parent2)
+            children.append(mutate(child1))
+            if len(children) < population_size:
+                children.append(mutate(child2))
+
+        population = children
+
+    best_x = decode(best_chrom)
+    return best_x, best_fitness
+
+best_x, best_fitness = genetic_algorithm()
+print(f"Best x: {best_x:.5f}")
+print(f"Best fitness: {best_fitness:.5f}")
